@@ -21,6 +21,8 @@ __extension__
 #endif
 #include_next <stdio.h>
 
+#include <stdarg.h>
+
 #if defined(_FORTIFY_SOURCE) && _FORTIFY_SOURCE > 0 && defined(__OPTIMIZE__) && __OPTIMIZE__ > 0
 #include "fortify-headers.h"
 
@@ -68,7 +70,7 @@ _FORTIFY_FN(fwrite) size_t fwrite(const void *__d, size_t __n, size_t __m, FILE 
 }
 
 _FORTIFY_FN(vsnprintf) int vsnprintf(char *__s, size_t __n, const char *__f,
-                                     __builtin_va_list __v)
+                                     va_list __v)
 {
 	size_t __b = __builtin_object_size(__s, 0);
 
@@ -77,7 +79,7 @@ _FORTIFY_FN(vsnprintf) int vsnprintf(char *__s, size_t __n, const char *__f,
 	return __orig_vsnprintf(__s, __n, __f, __v);
 }
 
-_FORTIFY_FN(vsprintf) int vsprintf(char *__s, const char *__f, __builtin_va_list __v)
+_FORTIFY_FN(vsprintf) int vsprintf(char *__s, const char *__f, va_list __v)
 {
 	size_t __b = __builtin_object_size(__s, 0);
 	int __r;
@@ -95,24 +97,29 @@ _FORTIFY_FN(vsprintf) int vsprintf(char *__s, const char *__f, __builtin_va_list
 _FORTIFY_FN(snprintf) int snprintf(char *__s, size_t __n, const char *__f, ...)
 {
 	size_t __b = __builtin_object_size(__s, 0);
-
+	va_list va;
+	va_start(va, __f);
 	if (__n > __b)
 		__builtin_trap();
-	return __orig_snprintf(__s, __n, __f, __builtin_va_arg_pack());
+	int __r = __orig_snprintf(__s, __n, __f, va);
+	va_end(va);
+	return __r;
 }
 
 _FORTIFY_FN(sprintf) int sprintf(char *__s, const char *__f, ...)
 {
 	size_t __b = __builtin_object_size(__s, 0);
 	int __r;
-
+	va_list va;
+	va_start(va, __f);
 	if (__b != (size_t)-1) {
-		__r = __orig_snprintf(__s, __b, __f, __builtin_va_arg_pack());
+		__r = __orig_snprintf(__s, __b, __f, va);
 		if (__r != -1 && (size_t)__r >= __b)
 			__builtin_trap();
 	} else {
-		__r = __orig_sprintf(__s, __f, __builtin_va_arg_pack());
+		__r = __orig_sprintf(__s, __f, va);
 	}
+	va_end(va);
 	return __r;
 }
 
